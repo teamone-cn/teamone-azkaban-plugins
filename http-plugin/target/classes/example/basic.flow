@@ -1,0 +1,22 @@
+---
+config:
+  failure.emails: noreply@foo.com
+
+nodes:
+  - name: login_request
+    type: http
+    config:
+      http_job.request.url: "https://svip-api.thwpmanage.com/api/vip/user/login"
+      http_job.request.method: "post"
+      http_job.request.content.type: "application/x-www-form-urlencoded"
+      http_job.request.param: "email=neil@tranhom.com&password=Neil758399577"
+
+  - name: login_callback
+    type: http
+    dependsOn:
+      - login_request
+    config:
+      http_job.callback.url: "https://dev-email-marketing.thwpmanage.com/api/system/user/login"
+      http_job.callback.method: "post"
+      http_job.callback.content.type: "application/json"
+      http_job.callback.param: "{\"email\":\"tin@tranhom.com\",\"password\":\"123456\"}"

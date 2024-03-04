@@ -129,16 +129,17 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
 
             readFilesInDirectory(outputDirPath, tokenMap);
 
-            // Teamone 在 requestFlag 为 false的情况下，请求获得响应后，在 callbackFlag 为 false的情况下，再进行回调
-            if (!tokenMap.isEmpty()) {
-                String response = request(tokenMap, teamoneHttpJobConfig, client);
-                JSONObject responseJson = JSON.parseObject(response);
-
-                JSONObject data = (JSONObject) responseJson.get("data");
-
-                callback(tokenMap, teamoneHttpJobConfig, client, data.toJSONString());
+            if (tokenMap.isEmpty()) {
+                throw new TeamoneHttpJobException("you must get the request_token and callback_token first!");
             }
 
+            // Teamone 在 requestFlag 为 false的情况下，请求获得响应后，在 callbackFlag 为 false的情况下，再进行回调
+            String response = request(tokenMap, teamoneHttpJobConfig, client);
+            JSONObject responseJson = JSON.parseObject(response);
+
+            JSONObject data = (JSONObject) responseJson.get("data");
+
+            callback(tokenMap, teamoneHttpJobConfig, client, data.toJSONString());
 
         }
 

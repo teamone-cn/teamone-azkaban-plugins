@@ -134,7 +134,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                 String response = request(tokenMap, teamoneHttpJobConfig, client);
                 JSONObject responseJson = JSON.parseObject(response);
 
-                JSONObject data = (JSONObject)responseJson.get("data");
+                JSONObject data = (JSONObject) responseJson.get("data");
 
                 callback(tokenMap, teamoneHttpJobConfig, client, data.toJSONString());
             }
@@ -144,8 +144,8 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
 
     }
 
-    private void callback(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client, String response) throws HttpProcessException {
-        if (!StringUtils.isBlank(teamoneHttpJobConfig.getCallbackURL())){
+    private void callback(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client, String response) throws HttpProcessException, TeamoneHttpJobException {
+        if (!StringUtils.isBlank(teamoneHttpJobConfig.getCallbackURL())) {
             // Teamone 先获取到tokenMap里面的callbackToken
             String callbackToken = tokenMap.get("callback_token");
 
@@ -171,10 +171,17 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                     HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
             this.logger.info("callback的result----" + result);
 
+            // 获取返回码，并对其进行校验
+            String code = JsonUtil.findValueInJSON(JSON.parseObject(result), "code");
+
+            if (!code.equals("200")) {
+                throw new TeamoneHttpJobException("The return code is not 200, please check the corresponding interface");
+            }
+
         }
     }
 
-    private String request(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client) throws HttpProcessException {
+    private String request(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client) throws HttpProcessException, TeamoneHttpJobException {
         if (!StringUtils.isBlank(teamoneHttpJobConfig.getRequestURL())) {
             // Teamone 先获取到tokenMap里面的requestToken
             String requestToken = tokenMap.get("request_token");
@@ -200,6 +207,13 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                     HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
 
             this.logger.info("request的result----" + result);
+
+            // 获取返回码，并对其进行校验
+            String code = JsonUtil.findValueInJSON(JSON.parseObject(result), "code");
+
+            if (!code.equals("200")) {
+                throw new TeamoneHttpJobException("The return code is not 200, please check the corresponding interface");
+            }
 
             return result;
         }
@@ -286,6 +300,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                 }
                 token = JsonUtil.findValueInJSON(JSON.parseObject(result), "token");
 
+                // 对 token 是否成功拿回进行校验，如果没有成功，那么该任务应该被置为失败
                 if (StringUtils.isBlank(token)) {
                     throw new TeamoneHttpJobException("Unable to obtain [log_callback] token, please check the interface!");
                 }

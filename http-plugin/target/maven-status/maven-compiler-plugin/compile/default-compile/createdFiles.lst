@@ -4,6 +4,7 @@ com/teamone/util/JsonUtil.class
 com/teamone/constans/TeamoneHttpJobPropsKey.class
 com/teamone/pojo/TeamoneHttpJobConfig.class
 com/teamone/service/impl/TeamoneExecuteJobServiceImpl.class
+com/teamone/pojo/TeamoneHttpJobInfo.class
 com/teamone/Main.class
 com/teamone/TeamoneHttpJob.class
 com/teamone/constans/TeamoneJobPropsKey.class

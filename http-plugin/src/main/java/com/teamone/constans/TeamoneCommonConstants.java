@@ -60,4 +60,21 @@ public class TeamoneCommonConstants {
      * 默认为空
      */
     public static final String DEFAULT_VALUE = "";
+
+    /**
+     * Teamone
+     * 默认请求token的后缀
+     */
+    public static final String DEFAULT_REQUEST_TOKEN_SUFFIX = "request_token";
+
+    /**
+     * Teamone
+     * 默认回调token的后缀
+     */
+    public static final String DEFAULT_CALLBACK_TOKEN_SUFFIX = "callback_token";
+    /**
+     * Teamone
+     * 默认回调token的后缀
+     */
+    public static final String DEFAULT_RETURN_CODE_KEY = "code";
 }

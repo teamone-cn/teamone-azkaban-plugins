@@ -2,17 +2,48 @@ package com.teamone.pojo;
 
 import java.util.HashMap;
 
+/**
+ * Teamone
+ * 用于构建httpJob的config对象
+ */
 public class TeamoneHttpJobConfig {
     private String requestURL;
     private String requestMethod;
     private String requestContentType;
     private String requestParam;
+    private String requestCallbackParamKey;
+    private String requestTimeout;
+    private String requestCode;
     private String callbackURL;
     private String callbackMethod;
     private String callbackContentType;
     private String callbackParam;
+    private String callbackTimeout;
+    private String callbackCode;
     private HashMap<String, Object> requestParamMap;
     private HashMap<String, Object> callBackParamMap;
+
+    public TeamoneHttpJobConfig(String requestURL, String requestMethod, String requestContentType, String requestParam,
+                                String requestCallbackParamKey, String requestTimeout, String requestCode,
+                                String callbackURL, String callbackMethod, String callbackContentType,
+                                String callbackParam, String callbackTimeout, String callbackCode,
+                                HashMap<String, Object> requestParamMap, HashMap<String, Object> callBackParamMap) {
+        this.requestURL = requestURL;
+        this.requestMethod = requestMethod;
+        this.requestContentType = requestContentType;
+        this.requestParam = requestParam;
+        this.requestCallbackParamKey = requestCallbackParamKey;
+        this.requestTimeout = requestTimeout;
+        this.requestCode = requestCode;
+        this.callbackURL = callbackURL;
+        this.callbackMethod = callbackMethod;
+        this.callbackContentType = callbackContentType;
+        this.callbackParam = callbackParam;
+        this.callbackTimeout = callbackTimeout;
+        this.callbackCode = callbackCode;
+        this.requestParamMap = requestParamMap;
+        this.callBackParamMap = callBackParamMap;
+    }
 
     public String getRequestURL() {
         return requestURL;
@@ -44,6 +75,30 @@ public class TeamoneHttpJobConfig {
 
     public void setRequestParam(String requestParam) {
         this.requestParam = requestParam;
+    }
+
+    public String getRequestCallbackParamKey() {
+        return requestCallbackParamKey;
+    }
+
+    public void setRequestCallbackParamKey(String requestCallbackParamKey) {
+        this.requestCallbackParamKey = requestCallbackParamKey;
+    }
+
+    public String getRequestTimeout() {
+        return requestTimeout;
+    }
+
+    public void setRequestTimeout(String requestTimeout) {
+        this.requestTimeout = requestTimeout;
+    }
+
+    public String getRequestCode() {
+        return requestCode;
+    }
+
+    public void setRequestCode(String requestCode) {
+        this.requestCode = requestCode;
     }
 
     public String getCallbackURL() {
@@ -78,6 +133,22 @@ public class TeamoneHttpJobConfig {
         this.callbackParam = callbackParam;
     }
 
+    public String getCallbackTimeout() {
+        return callbackTimeout;
+    }
+
+    public void setCallbackTimeout(String callbackTimeout) {
+        this.callbackTimeout = callbackTimeout;
+    }
+
+    public String getCallbackCode() {
+        return callbackCode;
+    }
+
+    public void setCallbackCode(String callbackCode) {
+        this.callbackCode = callbackCode;
+    }
+
     public HashMap<String, Object> getRequestParamMap() {
         return requestParamMap;
     }
@@ -94,19 +165,6 @@ public class TeamoneHttpJobConfig {
         this.callBackParamMap = callBackParamMap;
     }
 
-    public TeamoneHttpJobConfig(String requestURL, String requestMethod, String requestContentType, String requestParam, String callbackURL, String callbackMethod, String callbackContentType, String callbackParam, HashMap<String, Object> requestParamMap, HashMap<String, Object> callBackParamMap) {
-        this.requestURL = requestURL;
-        this.requestMethod = requestMethod;
-        this.requestContentType = requestContentType;
-        this.requestParam = requestParam;
-        this.callbackURL = callbackURL;
-        this.callbackMethod = callbackMethod;
-        this.callbackContentType = callbackContentType;
-        this.callbackParam = callbackParam;
-        this.requestParamMap = requestParamMap;
-        this.callBackParamMap = callBackParamMap;
-    }
-
     @Override
     public String toString() {
         return "TeamoneHttpJobConfig{" +
@@ -114,10 +172,15 @@ public class TeamoneHttpJobConfig {
                 ", requestMethod='" + requestMethod + '\'' +
                 ", requestContentType='" + requestContentType + '\'' +
                 ", requestParam='" + requestParam + '\'' +
+                ", requestCallbackParamKey='" + requestCallbackParamKey + '\'' +
+                ", requestTimeout='" + requestTimeout + '\'' +
+                ", requestCode='" + requestCode + '\'' +
                 ", callbackURL='" + callbackURL + '\'' +
                 ", callbackMethod='" + callbackMethod + '\'' +
                 ", callbackContentType='" + callbackContentType + '\'' +
                 ", callbackParam='" + callbackParam + '\'' +
+                ", callbackTimeout='" + callbackTimeout + '\'' +
+                ", callbackCode='" + callbackCode + '\'' +
                 ", requestParamMap=" + requestParamMap +
                 ", callBackParamMap=" + callBackParamMap +
                 '}';

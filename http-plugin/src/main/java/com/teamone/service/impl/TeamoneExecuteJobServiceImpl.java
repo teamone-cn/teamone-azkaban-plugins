@@ -15,18 +15,21 @@ import com.teamone.constans.TeamoneHttpJobPropsKey;
 import com.teamone.constans.TeamoneJobPropsKey;
 import com.teamone.exception.TeamoneHttpJobException;
 import com.teamone.pojo.TeamoneHttpJobConfig;
+import com.teamone.pojo.TeamoneHttpJobInfo;
 import com.teamone.service.TeamoneExecuteJobService;
 import com.teamone.util.JsonUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static com.teamone.constans.TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY;
 
 /**
  * Teamone
@@ -46,41 +49,71 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         String jobWorkDir = jobProps.getString("working.dir");
 
 
-        // Teamone 获取到需要请求的 url，参数，和需要回调的 url，参数
+        // Teamone 获取到请求的url
         String requestURL = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_URL.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
 
-        String requestMethod = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_METHOD.getKey(), "post").trim();
+        // Teamone 获取到请求的方法
+        String requestMethod = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_METHOD.getKey(), "get").trim();
 
+        // Teamone 获取到请求的参数格式
         String requestContentType = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_CONTENT_TYPE.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
 
+        // Teamone 获取到请求的参数
         String requestParam = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_PARAM.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
 
+        // Teamone 获取到请求返回内容中用于给回调的参数的json中的key
+        String requestCallbackParamKey = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_CALLBACK_PARAM_KEY.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
+
+        // Teamone 获取到请求的超时时间，默认 3600秒
+        String requestTimeout = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_TIMEOUT.getKey(), "3600").trim();
+
+        // Teamone 获取到请求的响应码，默认 200
+        String requestCode = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_CODE.getKey(), "200").trim();
+
+        // Teamone 获取到回调的url
         String callbackURL = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_URL.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
 
-        String callbackMethod = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_METHOD.getKey(), "post").trim();
+        // Teamone 获取到回调的方法
+        String callbackMethod = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_METHOD.getKey(), "get").trim();
 
+        // Teamone 获取到回调的参数格式
         String callbackContentType = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_CONTENT_TYPE.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
 
+        // Teamone 获取到回调的参数
         String callbackParam = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_PARAM.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
+
+        // Teamone 获取到回调的超时时间
+        String callbackTimeout = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_TIMEOUT.getKey(), "3600").trim();
+
+        // Teamone 获取到回调的响应码
+        String callbackCode = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_CODE.getKey(), "200").trim();
 
         HashMap<String, Object> requestParamMap = new HashMap<>();
         HashMap<String, Object> callBackParamMap = new HashMap<>();
 
-        if (callbackContentType.contains("form")) {
-            for (String param : callbackParam.split("&")) {
-                callBackParamMap.put(param.split("=")[0], param.split("=")[1]);
-            }
-        }
-
-        if (requestContentType.contains("form")) {
+        // Teamone 如果请求参数类型是带有 form 的表单格式给出的话，解析参数并将其放到对应的Map中
+        if (requestContentType.contains("form") && requestParam.contains("=")) {
             for (String param : requestParam.split("&")) {
                 requestParamMap.put(param.split("=")[0], param.split("=")[1]);
             }
         }
 
+        // Teamone 如果回调参数类型是带有 form 的表单格式给出的话，解析参数并将其放到对应的Map中
+        if (callbackContentType.contains("form") && callbackParam.contains("=")) {
+            for (String param : callbackParam.split("&")) {
+                callBackParamMap.put(param.split("=")[0], param.split("=")[1]);
+            }
+        }
+
+        // Teamone 构建配置对象
         TeamoneHttpJobConfig teamoneHttpJobConfig =
-                new TeamoneHttpJobConfig(requestURL, requestMethod, requestContentType, requestParam, callbackURL,
-                        callbackMethod, callbackContentType, callbackParam, requestParamMap, callBackParamMap);
+                new TeamoneHttpJobConfig(requestURL, requestMethod, requestContentType, requestParam,
+                        requestCallbackParamKey, requestTimeout, requestCode, callbackURL,
+                        callbackMethod, callbackContentType, callbackParam, callbackTimeout, callbackCode,
+                        requestParamMap, callBackParamMap);
+
+        // Teamone 构建判断job分类的对象
+        TeamoneHttpJobInfo teamoneHttpJobInfo = build(jobId);
 
         try {
             // Teamone 获取Http的客户端
@@ -90,10 +123,11 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                     .retry(5)                    //重试5次
                     .build();
 
-            getToken(jobId, teamoneHttpJobConfig, client, jobWorkDir, flowId);
-
-            requestAndCallBack(jobId, teamoneHttpJobConfig, client, jobWorkDir, flowId);
-
+            if (teamoneHttpJobInfo.getGetToken()) {
+                getToken(jobId, teamoneHttpJobConfig, client, jobWorkDir, flowId, teamoneHttpJobInfo);
+            } else {
+                requestAndCallBack(jobId, teamoneHttpJobConfig, client, jobWorkDir, flowId, teamoneHttpJobInfo);
+            }
         } catch (Exception e) {
             throw new TeamoneHttpJobException(e.getMessage(), projectName, flowId, execId, e);
         }
@@ -101,225 +135,316 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
 
     }
 
-    private void requestAndCallBack(String jobId, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client, String jobWorkDir, String flowId)
+    private TeamoneHttpJobInfo build(String jobId) {
+        String prefix = jobId.split("_", 2)[0];
+        String suffix = jobId.split("_", 2)[1];
+
+        boolean isGetToken = suffix.equals(TeamoneCommonConstants.DEFAULT_REQUEST_TOKEN_SUFFIX)
+                || suffix.equals(TeamoneCommonConstants.DEFAULT_CALLBACK_TOKEN_SUFFIX);
+
+        return new TeamoneHttpJobInfo(prefix, suffix, isGetToken);
+    }
+
+    private void requestAndCallBack(String jobId, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client,
+                                    String jobWorkDir, String flowId, TeamoneHttpJobInfo teamoneHttpJobInfo)
             throws TeamoneHttpJobException, HttpProcessException {
+        JSONObject dataJson = new JSONObject();
+        String dataString = "";
         HashMap<String, String> tokenMap = new HashMap<>();
 
-        if (!(jobId.equals("login_request") || jobId.equals("login_callback"))) {
-
-            // Teamone 对请求的URL和请求的方法进行验证的 Flag , 如果为 true 那么说明不符合
-            boolean requestFlag = StringUtils.isBlank(teamoneHttpJobConfig.getRequestURL()) ||
-                    !(teamoneHttpJobConfig.getRequestMethod().equals("get") ||
-                            teamoneHttpJobConfig.getRequestMethod().equals("post"));
-
-            // Teamone 对回调的URL和请求的方法进行验证的 Flag, 如果为 true 那么说明不符合
-            boolean callbackFlag = StringUtils.isBlank(teamoneHttpJobConfig.getCallbackURL()) ||
-                    !(teamoneHttpJobConfig.getCallbackMethod().equals("get") ||
-                            teamoneHttpJobConfig.getCallbackMethod().equals("post"));
-
-
-            // Teamone 对 请求URL 和 回调URL进行验证，两者必须有一个不为空
-            if (requestFlag || callbackFlag) {
-                throw new TeamoneHttpJobException("you must set params [http_job.request.url] and [http_job.request.method] (post,get)" +
-                        " or you must set params [http_job.callback.url] and [http_job.callback.method] (post,get)");
-            }
-            // Teamone 先读取必然会出现在前面的 token 的数据分别读取和放入 HashMap 中
-            String outputDirPath = TeamoneCommonConstants.PATH_SPLIT_SYMBOL + "tmp" +
-                    jobWorkDir + TeamoneCommonConstants.PATH_SPLIT_SYMBOL + flowId;
-
-            readFilesInDirectory(outputDirPath, tokenMap);
-
-            if (tokenMap.isEmpty()) {
-                throw new TeamoneHttpJobException("you must get the request_token and callback_token first!");
-            }
-
-            // Teamone 在 requestFlag 为 false的情况下，请求获得响应后，在 callbackFlag 为 false的情况下，再进行回调
-            String response = request(tokenMap, teamoneHttpJobConfig, client);
-            JSONObject responseJson = JSON.parseObject(response);
-
-            JSONObject data = (JSONObject) responseJson.get("data");
-
-            callback(tokenMap, teamoneHttpJobConfig, client, data.toJSONString());
-
+        // Teamone 先对请求的url 进行判空处理，如果为空，那么直接抛异常，不需要执行
+        if (StringUtils.isBlank(teamoneHttpJobConfig.getRequestURL())) {
+            throw new TeamoneHttpJobException("you must set this param [http_job.request.url] !");
         }
 
-    }
+        // Teamone 先读取必然会出现在前面的 token 的数据分别读取和放入 HashMap 中
+        readFilesInDirectory(TeamoneCommonConstants.PATH_SPLIT_SYMBOL + "tmp" +
+                jobWorkDir + TeamoneCommonConstants.PATH_SPLIT_SYMBOL + flowId, tokenMap);
 
-    private void callback(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client, String response) throws HttpProcessException, TeamoneHttpJobException {
+        // Teamone 流程到这里，必然会进行请求
+        String response = request(tokenMap, teamoneHttpJobConfig, client, teamoneHttpJobInfo);
+
+        // Teamone 如果根据param.key拿取到的结果是 json，那么转为json，如果不是，那么直接存储为String
+        if (JsonUtil.isJSON(JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey()))) {
+            dataJson = JSON.parseObject(JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey()));
+        } else {
+            dataString = JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey());
+        }
+
+        // Teamone 对回调的url 进行判空处理，如果不为空，才需要回调
         if (!StringUtils.isBlank(teamoneHttpJobConfig.getCallbackURL())) {
-            // Teamone 先获取到tokenMap里面的callbackToken
-            String callbackToken = tokenMap.get("callback_token");
-
-            // Teamone 构建 headers
-            Header[] headers = HttpHeader.custom()
-                    .userAgent("Apifox/1.0.0")
-                    .contentType(teamoneHttpJobConfig.getCallbackContentType())
-                    // 增加 token 信息
-                    .other("token", callbackToken)
-                    .build();
-            HttpConfig httpConfig = HttpConfig.custom()
-                    .headers(headers)
-                    .url(teamoneHttpJobConfig.getCallbackURL())
-                    .methodName(teamoneHttpJobConfig.getCallbackMethod())
-                    .encoding("utf-8").client(client);
-
-            // Teamone 对参数进行设置
-            httpConfig = httpConfig.map(teamoneHttpJobConfig.getCallBackParamMap())
-//                    .json(teamoneHttpJobConfig.getCallbackParam())
-                    .json(response);
-
-            String result = teamoneHttpJobConfig.getRequestMethod().equals("post") ?
-                    HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
-            this.logger.info("callback的result----" + result);
-
-            // 获取返回码，并对其进行校验
-            String code = JsonUtil.findValueInJSON(JSON.parseObject(result), "code");
-
-            if (!code.equals("200")) {
-                throw new TeamoneHttpJobException("The return code is not 200, please check the corresponding interface");
-            }
-
+            callback(tokenMap, teamoneHttpJobConfig, client, dataJson, dataString, teamoneHttpJobInfo);
         }
     }
 
-    private String request(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client) throws HttpProcessException, TeamoneHttpJobException {
-        if (!StringUtils.isBlank(teamoneHttpJobConfig.getRequestURL())) {
-            // Teamone 先获取到tokenMap里面的requestToken
-            String requestToken = tokenMap.get("request_token");
+    public void callback(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client,
+                         JSONObject dataJson, String dataString, TeamoneHttpJobInfo teamoneHttpJobInfo)
+            throws HttpProcessException, TeamoneHttpJobException {
 
-            // Teamone 构建 headers
-            Header[] headers = HttpHeader.custom()
-                    .userAgent("Apifox/1.0.0")
-                    .contentType(teamoneHttpJobConfig.getRequestContentType())
-                    // 增加 token 信息
-                    .other("token", requestToken)
-                    .build();
+        System.out.println("dataJson---" + dataJson);
+        System.out.println("dataString---" + dataString);
+
+        JSONObject jsonObject = new JSONObject();
+        JSONObject paramJson = new JSONObject();
+        HashMap<String, Object> requestCallBackParamMap = new HashMap<>();
+        // Teamone 先获取到tokenMap里面的callbackToken
+        String callbackToken = tokenMap.get(teamoneHttpJobInfo.getPrefix() + "_"
+                + TeamoneCommonConstants.DEFAULT_CALLBACK_TOKEN_SUFFIX);
+
+        // Teamone 如果获取不到相对应的token，那么报错
+        if (StringUtils.isBlank(callbackToken)) {
+            throw new TeamoneHttpJobException("you must get the callback_Token first!");
+        }
+
+        // Teamone 构建 headers
+        Header[] headers = HttpHeader.custom()
+                .userAgent("Apifox/1.0.0")
+                .contentType(teamoneHttpJobConfig.getCallbackContentType())
+                // 增加 token 信息
+                .other("token", callbackToken)
+                .build();
+        HttpConfig httpConfig = HttpConfig.custom()
+                .headers(headers)
+                .timeout(Integer.parseInt(teamoneHttpJobConfig.getCallbackTimeout()) * 1000)
+                .url(teamoneHttpJobConfig.getCallbackURL())
+                .methodName(teamoneHttpJobConfig.getCallbackMethod())
+                .encoding("utf-8")
+                .inenc("utf-8")
+                .client(client);
+
+        // Teamone 对参数进行设置,如果map不为空，那么加上map类型的参数
+        if (teamoneHttpJobConfig.getCallbackContentType().contains("form") &&
+                !teamoneHttpJobConfig.getCallBackParamMap().isEmpty()) {
+//            httpConfig.map(teamoneHttpJobConfig.getCallBackParamMap());
+            requestCallBackParamMap.putAll(teamoneHttpJobConfig.getCallBackParamMap());
+            System.out.println("这里执行判断000");
+        }
+
+        // Teamone 对参数进行设置,如果map为空 且 参数配置不为空 且 为json，那么加上json类型的参数
+        if (teamoneHttpJobConfig.getCallbackContentType().contains("json") &&
+                teamoneHttpJobConfig.getCallBackParamMap().isEmpty() &&
+                !StringUtils.isBlank(teamoneHttpJobConfig.getCallbackParam()) &&
+                JsonUtil.isJSON(teamoneHttpJobConfig.getCallbackParam())) {
+//            httpConfig.json(teamoneHttpJobConfig.getCallbackParam());
+            paramJson = JSONObject.parseObject(teamoneHttpJobConfig.getCallbackParam());
+            System.out.println("这里执行判断111");
+        }
+
+        // Teamone 如果回调参数类型是带有 form 的表单格式给出的话，解析请求附带回来的string，并且将参数放到对应的Map中
+        if (teamoneHttpJobConfig.getCallbackContentType().contains("form") && dataString.contains("=")) {
+            for (String param : dataString.split("&")) {
+                requestCallBackParamMap.put(param.split("=")[0], param.split("=")[1]);
+            }
+            System.out.println("requestCallBackParamMap---" + requestCallBackParamMap);
+            System.out.println("这里执行判断222");
+        }
+
+
+        // Teamone 解析请求附带回来的json，并且将参数放到参数中
+        if (teamoneHttpJobConfig.getCallbackContentType().contains("json")
+                && dataJson != null
+                && JsonUtil.isJSON(dataJson.toJSONString())) {
+            paramJson.putAll(dataJson);
+            System.out.println("这里执行判断333");
+        }
+
+        httpConfig.json(paramJson.toJSONString());
+
+        if (!teamoneHttpJobConfig.getCallbackContentType().contains("json")) {
+            httpConfig.map(requestCallBackParamMap);
+            httpConfig.map().remove("$ENTITY_JSON$");
+        } else {
+            httpConfig.json(paramJson.toJSONString());
+        }
+
+        System.out.println("httpConfig.map()---" + httpConfig.map());
+        System.out.println("httpConfig.json()---" + httpConfig.json());
+
+
+        String result = teamoneHttpJobConfig.getCallbackMethod().equals("post") ?
+                HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
+        this.logger.info("callback的result----" + result);
+
+        // Teamone 获取返回码，并对其进行校验
+        String code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+
+        if (!code.equals(teamoneHttpJobConfig.getCallbackCode())) {
+            throw new TeamoneHttpJobException("The return code is not [" + teamoneHttpJobConfig.getCallbackCode() +
+                    "], please check the corresponding interface");
+        }
+
+    }
+
+
+    private String request(HashMap<String, String> tokenMap, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client,
+                           TeamoneHttpJobInfo teamoneHttpJobInfo) throws HttpProcessException, TeamoneHttpJobException {
+
+        // Teamone 先获取到tokenMap里面的requestToken
+        String requestToken = tokenMap.get(teamoneHttpJobInfo.getPrefix() + "_"
+                + TeamoneCommonConstants.DEFAULT_REQUEST_TOKEN_SUFFIX);
+
+        // Teamone 如果获取不到相对应的token，那么报错
+        if (StringUtils.isBlank(requestToken)) {
+            throw new TeamoneHttpJobException("you must get the request_token first!");
+        }
+
+        // Teamone 构建 headers
+        Header[] headers = HttpHeader.custom()
+                .userAgent("Apifox/1.0.0")
+                .contentType(teamoneHttpJobConfig.getRequestContentType())
+                // 增加 token 信息
+                .other("token", requestToken)
+                .build();
+
+        // Teamone 构建请求的客户端
+        HttpConfig httpConfig = HttpConfig.custom()
+                .headers(headers)
+                .timeout(Integer.parseInt(teamoneHttpJobConfig.getRequestTimeout()) * 1000)
+                .url(teamoneHttpJobConfig.getRequestURL())
+                .methodName(teamoneHttpJobConfig.getRequestMethod())
+                .encoding("utf-8")
+                .inenc("utf-8")
+                .client(client);
+
+        // Teamone 对参数进行设置,如果map不为空，那么加上map类型的参数
+        if (!teamoneHttpJobConfig.getRequestParamMap().isEmpty()) {
+            httpConfig.map(teamoneHttpJobConfig.getRequestParamMap());
+        }
+
+        // Teamone 对参数进行设置,如果map为空 且 参数配置不为空 且 为json，那么加上json类型的参数
+        if (teamoneHttpJobConfig.getRequestParamMap().isEmpty() &&
+                !StringUtils.isBlank(teamoneHttpJobConfig.getRequestParam()) &&
+                JsonUtil.isJSON(teamoneHttpJobConfig.getRequestParam())) {
+            httpConfig.json(teamoneHttpJobConfig.getRequestParam());
+        }
+
+        String result = teamoneHttpJobConfig.getRequestMethod().equals("post") ?
+                HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
+        this.logger.info("request的result----" + result);
+
+        // Teamone 获取返回码，并对其进行校验
+        String code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+
+        if (!code.equals(teamoneHttpJobConfig.getRequestCode())) {
+            throw new TeamoneHttpJobException("The return code is not [" + teamoneHttpJobConfig.getRequestCode() +
+                    "], please check the corresponding interface");
+        }
+
+        return result;
+
+    }
+
+    private void getToken(String jobId, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client, String jobWorkDir,
+                          String flowId, TeamoneHttpJobInfo teamoneHttpJobInfo)
+            throws TeamoneHttpJobException, HttpProcessException, IOException {
+        String result;
+        String token;
+        Props props = new Props();
+        Header[] headers;
+
+        // Teamone 首先判断是不是拿token的job，如果是，那么就走的是 鉴权 并且 拿取对应的 token 并放在配置文件中的逻辑
+        if (teamoneHttpJobInfo.getSuffix().contains("request")) {
+            // Teamone 先对请求的url 进行判空处理，如果为空，那么直接抛异常，不需要执行
+            if (StringUtils.isBlank(teamoneHttpJobConfig.getRequestURL())) {
+                throw new TeamoneHttpJobException("you must set this param [http_job.request.url] !");
+            }
+
+            // Teamone 鉴权拿token逻辑
+            headers = HttpHeader.custom().userAgent("Apifox/1.0.0").contentType(teamoneHttpJobConfig.getRequestContentType()).build();
             HttpConfig httpConfig = HttpConfig.custom()
                     .headers(headers)
                     .url(teamoneHttpJobConfig.getRequestURL())
                     .methodName(teamoneHttpJobConfig.getRequestMethod())
-                    .encoding("utf-8").client(client);
+                    .encoding("utf-8")
+                    .client(client);
 
-            // Teamone 对参数进行设置
-            httpConfig = httpConfig.map(teamoneHttpJobConfig.getRequestParamMap())
-                    .json(teamoneHttpJobConfig.getRequestParam());
+            // Teamone 对参数进行设置,如果map不为空，那么加上map类型的参数
+            if (!teamoneHttpJobConfig.getRequestParamMap().isEmpty()) {
+                httpConfig.map(teamoneHttpJobConfig.getRequestParamMap());
+            }
 
-            String result = teamoneHttpJobConfig.getRequestMethod().equals("post") ?
+            // Teamone 对参数进行设置,如果map为空 且 参数配置不为空 且 为json，那么加上json类型的参数
+            if (teamoneHttpJobConfig.getRequestParamMap().isEmpty() &&
+                    !StringUtils.isBlank(teamoneHttpJobConfig.getRequestParam()) &&
+                    JsonUtil.isJSON(teamoneHttpJobConfig.getRequestParam())) {
+                httpConfig.json(teamoneHttpJobConfig.getRequestParam());
+            }
+
+            result = teamoneHttpJobConfig.getRequestMethod().equals("post") ?
                     HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
 
-            this.logger.info("request的result----" + result);
-
-            // 获取返回码，并对其进行校验
-            String code = JsonUtil.findValueInJSON(JSON.parseObject(result), "code");
-
-            if (!code.equals("200")) {
-                throw new TeamoneHttpJobException("The return code is not 200, please check the corresponding interface");
+            // Teamone 对 result 是否成功拿回进行校验，如果没有成功，那么该任务应该被置为失败
+            if (StringUtils.isBlank(result) || !JsonUtil.isJSON(result)) {
+                throw new TeamoneHttpJobException("Unable to obtain +" + jobId + "+ result, please check the interface!");
             }
 
-            return result;
-        }
-        return "";
-    }
+            token = JsonUtil.findValueInJSON(JSON.parseObject(result), "token");
 
-    private void getToken(String jobId, TeamoneHttpJobConfig teamoneHttpJobConfig, HttpClient client, String jobWorkDir, String flowId)
-            throws TeamoneHttpJobException, HttpProcessException, IOException {
-        String result;
-        String token = "";
-        Props props = new Props();
-        String propsKey = "";
-        // Teamone 首先判断是不是 login 的job，如果是，那么就走的是 鉴权 并且 拿取对应的 token 并放在配置文件中的逻辑
-        if (jobId.equals("login_request") || jobId.equals("login_callback")) {
-            Header[] headers;
-
-            if (jobId.contains("request")) {
-                // Teamone 先对请求的url 进行判空处理，如果为空，那么直接抛异常，不需要执行
-                if (StringUtils.isBlank(teamoneHttpJobConfig.getRequestURL())) {
-                    throw new TeamoneHttpJobException("you must set this param [http_job.request.url]");
-                }
-                // Teamone 对请求方法进行验证
-                if (!(teamoneHttpJobConfig.getRequestMethod().equals("get") || teamoneHttpJobConfig.getRequestMethod().equals("post"))) {
-                    throw new TeamoneHttpJobException("you must set this param [http_job.request.method] in 'get' or 'post' ");
-                }
-
-                System.out.println(jobId);
-                // Teamone 鉴权拿token逻辑
-                headers = HttpHeader.custom().userAgent("Apifox/1.0.0").contentType(teamoneHttpJobConfig.getRequestContentType()).build();
-                HttpConfig httpConfig = HttpConfig.custom()
-                        .headers(headers)
-                        .url(teamoneHttpJobConfig.getRequestURL())
-                        .methodName(teamoneHttpJobConfig.getRequestMethod())
-                        .encoding("utf-8").client(client);
-
-                // Teamone 对参数进行设置
-                httpConfig = httpConfig.map(teamoneHttpJobConfig.getRequestParamMap()).json(teamoneHttpJobConfig.getRequestParam());
-
-                result = teamoneHttpJobConfig.getRequestMethod().equals("post") ?
-                        HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
-
-                if (StringUtils.isBlank(result) || !JsonUtil.isJSON(result)) {
-                    throw new TeamoneHttpJobException("Unable to obtain [log_request] result, please check the interface!");
-                }
-
-                token = JsonUtil.findValueInJSON(JSON.parseObject(result), "token");
-
-                if (StringUtils.isBlank(token)) {
-                    throw new TeamoneHttpJobException("Unable to obtain [log_request] token, please check the interface!");
-                }
-                propsKey = "request";
-                props.put("request_token", token);
+            // Teamone 对 token 是否成功拿回进行校验，如果没有成功，那么该任务应该被置为失败
+            if (StringUtils.isBlank(token)) {
+                throw new TeamoneHttpJobException("Unable to obtain  +" + jobId + "+  token, please check the interface!");
             }
 
-            if (jobId.contains("callback")) {
-
-                // Teamone 先对回调的url 进行判空处理，如果为空，那么直接抛异常，不需要执行
-                if (StringUtils.isBlank(teamoneHttpJobConfig.getCallbackURL())) {
-                    throw new TeamoneHttpJobException("you must set this param [http_job.callback.url]");
-                }
-
-                // Teamone 对回调方法进行验证
-                if (!(teamoneHttpJobConfig.getCallbackMethod().equals("get") || teamoneHttpJobConfig.getCallbackMethod().equals("post"))) {
-                    throw new TeamoneHttpJobException("you must set this param [http_job.callback.method] in 'get' or 'post' ");
-                }
-
-                // Teamone 鉴权拿token逻辑
-                headers = HttpHeader.custom().contentType(teamoneHttpJobConfig.getCallbackContentType()).build();
-                // Teamone 对参数进行设置
-                HttpConfig httpConfig = HttpConfig.custom()
-                        .headers(headers)
-                        .url(teamoneHttpJobConfig.getCallbackURL())
-                        .methodName(teamoneHttpJobConfig.getCallbackMethod())
-                        .encoding("utf-8")
-                        .map(teamoneHttpJobConfig.getCallBackParamMap())
-                        .json(teamoneHttpJobConfig.getCallbackParam())
-                        .client(client);
-
-                result = teamoneHttpJobConfig.getCallbackMethod().equals("post") ? HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
-                this.logger.info("result----" + result);
-
-                if (StringUtils.isBlank(result) || !JsonUtil.isJSON(result)) {
-                    throw new TeamoneHttpJobException("Unable to obtain [log_callback] result, please check the interface!");
-                }
-                token = JsonUtil.findValueInJSON(JSON.parseObject(result), "token");
-
-                // 对 token 是否成功拿回进行校验，如果没有成功，那么该任务应该被置为失败
-                if (StringUtils.isBlank(token)) {
-                    throw new TeamoneHttpJobException("Unable to obtain [log_callback] token, please check the interface!");
-                }
-                propsKey = "callback";
-                props.put("callback_token", token);
-            }
-            outputGeneratedProperties(props, jobWorkDir, flowId, propsKey);
+            props.put(jobId, token);
         }
 
+        if (teamoneHttpJobInfo.getSuffix().contains("callback")) {
 
+            // Teamone 先对回调的url 进行判空处理，如果为空，那么直接抛异常，不需要执行
+            if (StringUtils.isBlank(teamoneHttpJobConfig.getCallbackURL())) {
+                throw new TeamoneHttpJobException("you must set this param [http_job.callback.url]");
+            }
+
+            // Teamone 鉴权拿token逻辑
+            headers = HttpHeader.custom().contentType(teamoneHttpJobConfig.getCallbackContentType()).build();
+
+            HttpConfig httpConfig = HttpConfig.custom()
+                    .headers(headers)
+                    .url(teamoneHttpJobConfig.getCallbackURL())
+                    .methodName(teamoneHttpJobConfig.getCallbackMethod())
+                    .encoding("utf-8")
+                    .client(client);
+
+            // Teamone 对参数进行设置,如果map不为空，那么加上map类型的参数
+            if (!teamoneHttpJobConfig.getCallBackParamMap().isEmpty()) {
+                httpConfig.map(teamoneHttpJobConfig.getCallBackParamMap());
+            }
+
+            // Teamone 对参数进行设置,如果map为空 且 参数配置不为空 且 为json，那么加上json类型的参数
+            if (teamoneHttpJobConfig.getCallBackParamMap().isEmpty() &&
+                    !StringUtils.isBlank(teamoneHttpJobConfig.getCallbackParam()) &&
+                    JsonUtil.isJSON(teamoneHttpJobConfig.getCallbackParam())) {
+                httpConfig.json(teamoneHttpJobConfig.getCallbackParam());
+            }
+
+            result = teamoneHttpJobConfig.getCallbackMethod().equals("post") ?
+                    HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
+
+            // Teamone 对 result 是否成功拿回进行校验，如果没有成功，那么该任务应该被置为失败
+            if (StringUtils.isBlank(result) || !JsonUtil.isJSON(result)) {
+                throw new TeamoneHttpJobException("Unable to obtain +" + jobId + "+ result, please check the interface!");
+            }
+
+            token = JsonUtil.findValueInJSON(JSON.parseObject(result), "token");
+
+            // Teamone 对 token 是否成功拿回进行校验，如果没有成功，那么该任务应该被置为失败
+            if (StringUtils.isBlank(token)) {
+                throw new TeamoneHttpJobException("Unable to obtain  +" + jobId + "+  token, please check the interface!");
+            }
+
+            props.put(jobId, token);
+        }
+        // Teamone 在当前执行任务id下执行需要用到的request的token信息和callback的token信息
+        outputGeneratedProperties(props, jobWorkDir, flowId, teamoneHttpJobInfo);
     }
 
 
-    private void outputGeneratedProperties(Props outputProperties, String jobWorkDir, String flowId, String propsKey) throws IOException {
+    private void outputGeneratedProperties(Props outputProperties, String jobWorkDir, String flowId,
+                                           TeamoneHttpJobInfo teamoneHttpJobInfo) throws IOException {
 
         String outputDirPath = TeamoneCommonConstants.PATH_SPLIT_SYMBOL + "tmp" + jobWorkDir + TeamoneCommonConstants.PATH_SPLIT_SYMBOL + flowId;
 
-        String outputFileName = flowId + "_" + propsKey + ".tmp";
+        String outputFileName = flowId + "_" + teamoneHttpJobInfo.getPrefix() + "_" + teamoneHttpJobInfo.getSuffix() + ".tmp";
 
         this.logger.info("Outputting generated properties to " + outputDirPath);
 

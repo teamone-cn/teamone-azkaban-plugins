@@ -8,7 +8,6 @@ import static com.teamone.constans.TeamoneCommonConstants.CUSTOM_PREFIX;
  */
 public enum TeamoneHttpJobPropsKey {
 
-
     HTTP_JOB_REQUEST_URL(String.format("%s.request.url", CUSTOM_PREFIX)),
 
     HTTP_JOB_REQUEST_METHOD(String.format("%s.request.method", CUSTOM_PREFIX)),
@@ -17,13 +16,23 @@ public enum TeamoneHttpJobPropsKey {
 
     HTTP_JOB_REQUEST_PARAM(String.format("%s.request.param", CUSTOM_PREFIX)),
 
+    HTTP_JOB_REQUEST_CALLBACK_PARAM_KEY(String.format("%s.request.callback.param.key", CUSTOM_PREFIX)),
+
+    HTTP_JOB_REQUEST_TIMEOUT(String.format("%s.request.timeout", CUSTOM_PREFIX)),
+
+    HTTP_JOB_REQUEST_CODE(String.format("%s.request.code", CUSTOM_PREFIX)),
+
     HTTP_JOB_CALLBACK_URL(String.format("%s.callback.url", CUSTOM_PREFIX)),
 
     HTTP_JOB_CALLBACK_METHOD(String.format("%s.callback.method", CUSTOM_PREFIX)),
 
     HTTP_JOB_CALLBACK_CONTENT_TYPE(String.format("%s.callback.content.type", CUSTOM_PREFIX)),
 
-    HTTP_JOB_CALLBACK_PARAM(String.format("%s.callback.param", CUSTOM_PREFIX));
+    HTTP_JOB_CALLBACK_PARAM(String.format("%s.callback.param", CUSTOM_PREFIX)),
+
+    HTTP_JOB_CALLBACK_TIMEOUT(String.format("%s.callback.timeout", CUSTOM_PREFIX)),
+
+    HTTP_JOB_CALLBACK_CODE(String.format("%s.callback.code", CUSTOM_PREFIX));
 
     private final String key;
 

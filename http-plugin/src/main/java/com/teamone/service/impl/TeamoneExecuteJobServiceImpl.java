@@ -107,10 +107,22 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
 
         // Teamone 构建配置对象
         TeamoneHttpJobConfig teamoneHttpJobConfig =
-                new TeamoneHttpJobConfig(requestURL, requestMethod, requestContentType, requestParam,
-                        requestCallbackParamKey, requestTimeout, requestCode, callbackURL,
-                        callbackMethod, callbackContentType, callbackParam, callbackTimeout, callbackCode,
-                        requestParamMap, callBackParamMap);
+                new TeamoneHttpJobConfig(
+                        requestURL,
+                        StringUtils.defaultString(requestMethod,"get"),
+                        StringUtils.defaultString(requestContentType,"none"),
+                        requestParam,
+                        StringUtils.defaultString(requestCallbackParamKey,"data"),
+                        StringUtils.defaultString(requestTimeout,"3600"),
+                        StringUtils.defaultString(requestCode,"200"),
+                        callbackURL,
+                        StringUtils.defaultString(callbackMethod,"get"),
+                        StringUtils.defaultString(callbackContentType,"none"),
+                        callbackParam,
+                        StringUtils.defaultString(callbackTimeout,"3600"),
+                        StringUtils.defaultString(callbackCode,"200"),
+                        requestParamMap,
+                        callBackParamMap);
 
         // Teamone 构建判断job分类的对象
         TeamoneHttpJobInfo teamoneHttpJobInfo = build(jobId);

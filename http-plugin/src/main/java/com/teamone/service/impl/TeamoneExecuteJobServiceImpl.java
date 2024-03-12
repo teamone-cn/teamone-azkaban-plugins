@@ -109,18 +109,18 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         TeamoneHttpJobConfig teamoneHttpJobConfig =
                 new TeamoneHttpJobConfig(
                         requestURL,
-                        StringUtils.defaultString(requestMethod,"get"),
-                        StringUtils.defaultString(requestContentType,"none"),
+                        StringUtils.defaultIfBlank(requestMethod,"get"),
+                        StringUtils.defaultIfBlank(requestContentType,"none"),
                         requestParam,
-                        StringUtils.defaultString(requestCallbackParamKey,"data"),
-                        StringUtils.defaultString(requestTimeout,"3600"),
-                        StringUtils.defaultString(requestCode,"200"),
+                        StringUtils.defaultIfBlank(requestCallbackParamKey,"data"),
+                        StringUtils.defaultIfBlank(requestTimeout,"3600"),
+                        StringUtils.defaultIfBlank(requestCode,"200"),
                         callbackURL,
-                        StringUtils.defaultString(callbackMethod,"get"),
-                        StringUtils.defaultString(callbackContentType,"none"),
+                        StringUtils.defaultIfBlank(callbackMethod,"get"),
+                        StringUtils.defaultIfBlank(callbackContentType,"none"),
                         callbackParam,
-                        StringUtils.defaultString(callbackTimeout,"3600"),
-                        StringUtils.defaultString(callbackCode,"200"),
+                        StringUtils.defaultIfBlank(callbackTimeout,"3600"),
+                        StringUtils.defaultIfBlank(callbackCode,"200"),
                         requestParamMap,
                         callBackParamMap);
 

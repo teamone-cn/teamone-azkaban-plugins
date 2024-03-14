@@ -22,6 +22,8 @@ public enum TeamoneHttpJobPropsKey {
 
     HTTP_JOB_REQUEST_CODE(String.format("%s.request.code", CUSTOM_PREFIX)),
 
+    HTTP_JOB_REQUEST_NEED_TOKEN(String.format("%s.request.needToken", CUSTOM_PREFIX)),
+
     HTTP_JOB_CALLBACK_URL(String.format("%s.callback.url", CUSTOM_PREFIX)),
 
     HTTP_JOB_CALLBACK_METHOD(String.format("%s.callback.method", CUSTOM_PREFIX)),
@@ -32,7 +34,9 @@ public enum TeamoneHttpJobPropsKey {
 
     HTTP_JOB_CALLBACK_TIMEOUT(String.format("%s.callback.timeout", CUSTOM_PREFIX)),
 
-    HTTP_JOB_CALLBACK_CODE(String.format("%s.callback.code", CUSTOM_PREFIX));
+    HTTP_JOB_CALLBACK_CODE(String.format("%s.callback.code", CUSTOM_PREFIX)),
+
+    HTTP_JOB_CALLBACK_NEED_TOKEN(String.format("%s.callback.needToken", CUSTOM_PREFIX));
 
     private final String key;
 

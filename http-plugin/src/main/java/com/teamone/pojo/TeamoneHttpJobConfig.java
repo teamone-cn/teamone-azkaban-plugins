@@ -14,20 +14,19 @@ public class TeamoneHttpJobConfig {
     private String requestCallbackParamKey;
     private String requestTimeout;
     private String requestCode;
+
+    private String requestNeedToken;
     private String callbackURL;
     private String callbackMethod;
     private String callbackContentType;
     private String callbackParam;
     private String callbackTimeout;
     private String callbackCode;
+    private String callbackNeedToken;
     private HashMap<String, Object> requestParamMap;
     private HashMap<String, Object> callBackParamMap;
 
-    public TeamoneHttpJobConfig(String requestURL, String requestMethod, String requestContentType, String requestParam,
-                                String requestCallbackParamKey, String requestTimeout, String requestCode,
-                                String callbackURL, String callbackMethod, String callbackContentType,
-                                String callbackParam, String callbackTimeout, String callbackCode,
-                                HashMap<String, Object> requestParamMap, HashMap<String, Object> callBackParamMap) {
+    public TeamoneHttpJobConfig(String requestURL, String requestMethod, String requestContentType, String requestParam, String requestCallbackParamKey, String requestTimeout, String requestCode, String requestNeedToken, String callbackURL, String callbackMethod, String callbackContentType, String callbackParam, String callbackTimeout, String callbackCode, String callbackNeedToken, HashMap<String, Object> requestParamMap, HashMap<String, Object> callBackParamMap) {
         this.requestURL = requestURL;
         this.requestMethod = requestMethod;
         this.requestContentType = requestContentType;
@@ -35,12 +34,14 @@ public class TeamoneHttpJobConfig {
         this.requestCallbackParamKey = requestCallbackParamKey;
         this.requestTimeout = requestTimeout;
         this.requestCode = requestCode;
+        this.requestNeedToken = requestNeedToken;
         this.callbackURL = callbackURL;
         this.callbackMethod = callbackMethod;
         this.callbackContentType = callbackContentType;
         this.callbackParam = callbackParam;
         this.callbackTimeout = callbackTimeout;
         this.callbackCode = callbackCode;
+        this.callbackNeedToken = callbackNeedToken;
         this.requestParamMap = requestParamMap;
         this.callBackParamMap = callBackParamMap;
     }
@@ -101,6 +102,14 @@ public class TeamoneHttpJobConfig {
         this.requestCode = requestCode;
     }
 
+    public String getRequestNeedToken() {
+        return requestNeedToken;
+    }
+
+    public void setRequestNeedToken(String requestNeedToken) {
+        this.requestNeedToken = requestNeedToken;
+    }
+
     public String getCallbackURL() {
         return callbackURL;
     }
@@ -149,6 +158,14 @@ public class TeamoneHttpJobConfig {
         this.callbackCode = callbackCode;
     }
 
+    public String getCallbackNeedToken() {
+        return callbackNeedToken;
+    }
+
+    public void setCallbackNeedToken(String callbackNeedToken) {
+        this.callbackNeedToken = callbackNeedToken;
+    }
+
     public HashMap<String, Object> getRequestParamMap() {
         return requestParamMap;
     }
@@ -175,12 +192,14 @@ public class TeamoneHttpJobConfig {
                 ", requestCallbackParamKey='" + requestCallbackParamKey + '\'' +
                 ", requestTimeout='" + requestTimeout + '\'' +
                 ", requestCode='" + requestCode + '\'' +
+                ", requestNeedToken='" + requestNeedToken + '\'' +
                 ", callbackURL='" + callbackURL + '\'' +
                 ", callbackMethod='" + callbackMethod + '\'' +
                 ", callbackContentType='" + callbackContentType + '\'' +
                 ", callbackParam='" + callbackParam + '\'' +
                 ", callbackTimeout='" + callbackTimeout + '\'' +
                 ", callbackCode='" + callbackCode + '\'' +
+                ", callbackNeedToken='" + callbackNeedToken + '\'' +
                 ", requestParamMap=" + requestParamMap +
                 ", callBackParamMap=" + callBackParamMap +
                 '}';

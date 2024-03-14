@@ -70,6 +70,9 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         // Teamone 获取到请求的响应码，默认 200
         String requestCode = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_CODE.getKey(), "200").trim();
 
+        // Teamone 获取到请求是否需要token
+        String requestNeedToken = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_REQUEST_NEED_TOKEN.getKey(), "0").trim();
+
         // Teamone 获取到回调的url
         String callbackURL = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_URL.getKey(), TeamoneCommonConstants.DEFAULT_VALUE).trim();
 
@@ -87,6 +90,9 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
 
         // Teamone 获取到回调的响应码
         String callbackCode = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_CODE.getKey(), "200").trim();
+
+        // Teamone 获取到回调是否需要token
+        String callbackNeedToken = jobProps.getString(TeamoneHttpJobPropsKey.HTTP_JOB_CALLBACK_NEED_TOKEN.getKey(), "0").trim();
 
         HashMap<String, Object> requestParamMap = new HashMap<>();
         HashMap<String, Object> callBackParamMap = new HashMap<>();
@@ -115,12 +121,14 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                         StringUtils.defaultIfBlank(requestCallbackParamKey,"data"),
                         StringUtils.defaultIfBlank(requestTimeout,"3600"),
                         StringUtils.defaultIfBlank(requestCode,"200"),
+                        StringUtils.defaultIfBlank(requestNeedToken,"0"),
                         callbackURL,
                         StringUtils.defaultIfBlank(callbackMethod,"get"),
                         StringUtils.defaultIfBlank(callbackContentType,"none"),
                         callbackParam,
                         StringUtils.defaultIfBlank(callbackTimeout,"3600"),
                         StringUtils.defaultIfBlank(callbackCode,"200"),
+                        StringUtils.defaultIfBlank(callbackNeedToken,"0"),
                         requestParamMap,
                         callBackParamMap);
 
@@ -148,8 +156,15 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
     }
 
     private TeamoneHttpJobInfo build(String jobId) {
-        String prefix = jobId.split("_", 2)[0];
-        String suffix = jobId.split("_", 2)[1];
+        String prefix= "";
+        String suffix = "";
+        if (jobId.contains("_")){
+             prefix = jobId.split("_", 2)[0];
+             suffix = jobId.split("_", 2)[1];
+        }else if (jobId.contains("-")){
+            prefix = jobId.split("-", 2)[0];
+            suffix = jobId.split("-", 2)[1];
+        }
 
         boolean isGetToken = suffix.equals(TeamoneCommonConstants.DEFAULT_REQUEST_TOKEN_SUFFIX)
                 || suffix.equals(TeamoneCommonConstants.DEFAULT_CALLBACK_TOKEN_SUFFIX);
@@ -204,7 +219,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                 + TeamoneCommonConstants.DEFAULT_CALLBACK_TOKEN_SUFFIX);
 
         // Teamone 如果获取不到相对应的token，那么报错
-        if (StringUtils.isBlank(callbackToken)) {
+        if (StringUtils.isBlank(callbackToken) && teamoneHttpJobConfig.getCallbackNeedToken().equals("1")) {
             throw new TeamoneHttpJobException("you must get the callback_Token first!");
         }
 
@@ -280,7 +295,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         // Teamone 获取返回码，并对其进行校验
         String code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
 
-        if (!code.equals(teamoneHttpJobConfig.getCallbackCode())) {
+        if (!teamoneHttpJobConfig.getRequestCode().equals("999") && !code.equals(teamoneHttpJobConfig.getCallbackCode())) {
             throw new TeamoneHttpJobException("The return code is not [" + teamoneHttpJobConfig.getCallbackCode() +
                     "], please check the corresponding interface");
         }
@@ -296,7 +311,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                 + TeamoneCommonConstants.DEFAULT_REQUEST_TOKEN_SUFFIX);
 
         // Teamone 如果获取不到相对应的token，那么报错
-        if (StringUtils.isBlank(requestToken)) {
+        if (StringUtils.isBlank(requestToken) && teamoneHttpJobConfig.getRequestNeedToken().equals("1")) {
             throw new TeamoneHttpJobException("you must get the request_token first!");
         }
 
@@ -337,7 +352,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         // Teamone 获取返回码，并对其进行校验
         String code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
 
-        if (!code.equals(teamoneHttpJobConfig.getRequestCode())) {
+        if (!teamoneHttpJobConfig.getRequestCode().equals("999") && !code.equals(teamoneHttpJobConfig.getRequestCode())) {
             throw new TeamoneHttpJobException("The return code is not [" + teamoneHttpJobConfig.getRequestCode() +
                     "], please check the corresponding interface");
         }

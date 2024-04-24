@@ -24,12 +24,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.log4j.Logger;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.teamone.constans.TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY;
 
 /**
  * Teamone
@@ -115,20 +113,20 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         TeamoneHttpJobConfig teamoneHttpJobConfig =
                 new TeamoneHttpJobConfig(
                         requestURL,
-                        StringUtils.defaultIfBlank(requestMethod,"get"),
-                        StringUtils.defaultIfBlank(requestContentType,"none"),
+                        StringUtils.defaultIfBlank(requestMethod, "get"),
+                        StringUtils.defaultIfBlank(requestContentType, "none"),
                         requestParam,
-                        StringUtils.defaultIfBlank(requestCallbackParamKey,"data"),
-                        StringUtils.defaultIfBlank(requestTimeout,"3600"),
-                        StringUtils.defaultIfBlank(requestCode,"200"),
-                        StringUtils.defaultIfBlank(requestNeedToken,"0"),
+                        StringUtils.defaultIfBlank(requestCallbackParamKey, "data"),
+                        StringUtils.defaultIfBlank(requestTimeout, "3600"),
+                        StringUtils.defaultIfBlank(requestCode, "200"),
+                        StringUtils.defaultIfBlank(requestNeedToken, "0"),
                         callbackURL,
-                        StringUtils.defaultIfBlank(callbackMethod,"get"),
-                        StringUtils.defaultIfBlank(callbackContentType,"none"),
+                        StringUtils.defaultIfBlank(callbackMethod, "get"),
+                        StringUtils.defaultIfBlank(callbackContentType, "none"),
                         callbackParam,
-                        StringUtils.defaultIfBlank(callbackTimeout,"3600"),
-                        StringUtils.defaultIfBlank(callbackCode,"200"),
-                        StringUtils.defaultIfBlank(callbackNeedToken,"0"),
+                        StringUtils.defaultIfBlank(callbackTimeout, "3600"),
+                        StringUtils.defaultIfBlank(callbackCode, "200"),
+                        StringUtils.defaultIfBlank(callbackNeedToken, "0"),
                         requestParamMap,
                         callBackParamMap);
 
@@ -156,12 +154,12 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
     }
 
     private TeamoneHttpJobInfo build(String jobId) {
-        String prefix= "";
+        String prefix = "";
         String suffix = "";
-        if (jobId.contains("_")){
-             prefix = jobId.split("_", 2)[0];
-             suffix = jobId.split("_", 2)[1];
-        }else if (jobId.contains("-")){
+        if (jobId.contains("_")) {
+            prefix = jobId.split("_", 2)[0];
+            suffix = jobId.split("_", 2)[1];
+        } else if (jobId.contains("-")) {
             prefix = jobId.split("-", 2)[0];
             suffix = jobId.split("-", 2)[1];
         }
@@ -191,11 +189,13 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         // Teamone 流程到这里，必然会进行请求
         String response = request(tokenMap, teamoneHttpJobConfig, client, teamoneHttpJobInfo);
 
-        // Teamone 如果根据param.key拿取到的结果是 json，那么转为json，如果不是，那么直接存储为String
-        if (JsonUtil.isJSON(JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey()))) {
-            dataJson = JSON.parseObject(JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey()));
-        } else {
-            dataString = JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey());
+        if (JsonUtil.isJSON(response)) {
+            // Teamone 如果根据param.key拿取到的结果是 json，那么转为json，如果不是，那么直接存储为String
+            if (JsonUtil.isJSON(JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey()))) {
+                dataJson = JSON.parseObject(JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey()));
+            } else {
+                dataString = JsonUtil.findValueInJSON(JSON.parseObject(response), teamoneHttpJobConfig.getRequestCallbackParamKey());
+            }
         }
 
         // Teamone 对回调的url 进行判空处理，如果不为空，才需要回调
@@ -292,8 +292,11 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                 HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
         this.logger.info("callback的result----" + result);
 
-        // Teamone 获取返回码，并对其进行校验
-        String code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+        String code = "";
+        if (JsonUtil.isJSON(result)) {
+            // Teamone 获取返回码，并对其进行校验
+            code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+        }
 
         if (!teamoneHttpJobConfig.getRequestCode().equals("999") && !code.equals(teamoneHttpJobConfig.getCallbackCode())) {
             throw new TeamoneHttpJobException("The return code is not [" + teamoneHttpJobConfig.getCallbackCode() +
@@ -349,8 +352,11 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
                 HttpClientUtil.post(httpConfig) : HttpClientUtil.get(httpConfig);
         this.logger.info("request的result----" + result);
 
-        // Teamone 获取返回码，并对其进行校验
-        String code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+        String code = "";
+        if (JsonUtil.isJSON(result)) {
+            // Teamone 获取返回码，并对其进行校验
+            code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+        }
 
         if (!teamoneHttpJobConfig.getRequestCode().equals("999") && !code.equals(teamoneHttpJobConfig.getRequestCode())) {
             throw new TeamoneHttpJobException("The return code is not [" + teamoneHttpJobConfig.getRequestCode() +

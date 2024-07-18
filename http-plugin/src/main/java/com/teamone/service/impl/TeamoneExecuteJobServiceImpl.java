@@ -8,6 +8,7 @@ import com.arronlong.httpclientutil.HttpClientUtil;
 import com.arronlong.httpclientutil.builder.HCB;
 import com.arronlong.httpclientutil.common.HttpConfig;
 import com.arronlong.httpclientutil.common.HttpHeader;
+import com.arronlong.httpclientutil.common.HttpResult;
 import com.arronlong.httpclientutil.common.SSLs;
 import com.arronlong.httpclientutil.exception.HttpProcessException;
 import com.teamone.constans.TeamoneCommonConstants;
@@ -293,9 +294,17 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         this.logger.info("callback的result----" + result);
 
         String code = "";
-        if (JsonUtil.isJSON(result)) {
+
+        // Teamone 如果是post请求，那么响应码从返回体中拿
+        if (JsonUtil.isJSON(result) && teamoneHttpJobConfig.getRequestMethod().equals("post")) {
             // Teamone 获取返回码，并对其进行校验
             code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+        }
+
+        // Teamone 如果是get请求，那么响应码直接拿responseCode
+        if ( teamoneHttpJobConfig.getRequestMethod().equals("get")) {
+            // Teamone 获取返回码，并对其进行校验
+            code = String.valueOf(HttpClientUtil.sendAndGetResp(httpConfig).getStatusCode());
         }
 
         if (!teamoneHttpJobConfig.getRequestCode().equals("999") && !code.equals(teamoneHttpJobConfig.getCallbackCode())) {
@@ -353,9 +362,16 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
         this.logger.info("request的result----" + result);
 
         String code = "";
-        if (JsonUtil.isJSON(result)) {
+        // Teamone 如果是post请求，那么响应码从返回体中拿
+        if (JsonUtil.isJSON(result) && teamoneHttpJobConfig.getRequestMethod().equals("post")) {
             // Teamone 获取返回码，并对其进行校验
             code = JsonUtil.findValueInJSON(JSON.parseObject(result), TeamoneCommonConstants.DEFAULT_RETURN_CODE_KEY);
+        }
+
+        // Teamone 如果是get请求，那么响应码直接拿responseCode
+        if (teamoneHttpJobConfig.getRequestMethod().equals("get")) {
+            // Teamone 获取返回码，并对其进行校验
+             code = String.valueOf(HttpClientUtil.sendAndGetResp(httpConfig).getStatusCode());
         }
 
         if (!teamoneHttpJobConfig.getRequestCode().equals("999") && !code.equals(teamoneHttpJobConfig.getRequestCode())) {

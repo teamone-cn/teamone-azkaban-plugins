@@ -40,8 +40,8 @@ public class Main {
         HttpConfig httpConfig = HttpConfig.custom()
                 .headers(headers)
 //                .timeout(Integer.parseInt(teamoneHttpJobConfig.getCallbackTimeout()) * 1000)
-                .url("https://dev-svip-api.thwpmanage.com/api/vip/test/verifySign")
-                .methodName("post")
+                .url("https://data.thwpmanage.com/XkpaOYZBxu.php/email/email_task/updateTaskStatu")
+                .methodName("get")
                 .encoding("utf-8").client(client);
 
 
@@ -56,7 +56,7 @@ public class Main {
         System.out.println("json"+httpConfig.json());
 
 
-        String post = HttpClientUtil.post(httpConfig);
+        String post = String.valueOf(HttpClientUtil.sendAndGetResp(httpConfig).getStatusCode());
         System.out.println(post);
 
 //

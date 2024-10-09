@@ -534,6 +534,7 @@ public class TeamoneExecuteJobServiceImpl implements TeamoneExecuteJobService {
 
     public void readFilesInDirectory(String directoryPath, HashMap<String, String> tokenMap) {
         File directory = new File(directoryPath);
+
         File[] files = directory.listFiles();
         if (files != null) {
             for (File file : files) {
